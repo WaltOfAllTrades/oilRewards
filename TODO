@@ -21,3 +21,28 @@ Loyalty Redemptions
 -Number (REDXXXXXXX)
 -Triggered by (services.number)
 
+
+
+On customer page
+Customer 555555 > Customer ID: 555555
+Visible cols
+- Service number (.number)
+- Service date Apr 4, 2026, 06:22 PM > Apr 4, 2026
+- Redemption (.number)
+- keep the free badge (love this)
+
+Create onHover for the row like a power BI tool tip
+- Service number (.number)
+- Service date (Apr 4, 2026, 06:22 PM)
+- Redemption (.number)
+- Redeemed (Apr 4, 2026, 06:22 PM)
+- Free badge (if applicable)
+
+
+
+in the header size down the font 2 and replace button with link appearance (still white,underlined)
+On home, swap the location of the go buttons
+On customer us the replace the home button with the following contents in the current style of the existing countdown 
+↩ Home
+<countdown>
+(stacked like that)

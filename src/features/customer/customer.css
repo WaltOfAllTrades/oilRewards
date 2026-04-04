@@ -16,6 +16,24 @@
   text-align: center;
 }
 
+/* ── Home button with countdown ────────────────────────── */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.home-label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.countdown-inline {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
 /* ── Services table ────────────────────────────────────── */
 .services-table {
   width: 100%;
@@ -41,6 +59,46 @@
 
 .row-even td { background: var(--bg-alt); }
 .row-odd td  { background: var(--bg-row); }
+
+/* ── Row tooltip ───────────────────────────────────────── */
+.has-tooltip {
+  position: relative;
+  cursor: default;
+}
+
+.has-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  white-space: pre-line;
+  background: #111;
+  color: var(--text);
+  border: 1px solid #444;
+  border-radius: var(--radius);
+  padding: 0.6rem 0.85rem;
+  font-size: 0.78rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  line-height: 1.55;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 500;
+  min-width: 220px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.has-tooltip:hover::after {
+  opacity: 1;
+}
+
+/* Keep tooltip on screen for rows near the top */
+tbody tr:first-child.has-tooltip::after,
+tbody tr:nth-child(2).has-tooltip::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
 
 .text-muted {
   color: var(--text-muted);

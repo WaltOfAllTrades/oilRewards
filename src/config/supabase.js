@@ -23,6 +23,30 @@
  *     triggered_by text NOT NULL
  *   );
  *
+ *   -- Auto-increment sequences (start at 1000 → LS0001000, RED0001000)
+ *   CREATE SEQUENCE logged_services_seq START 1000;
+ *   CREATE SEQUENCE loyalty_redemptions_seq START 1000;
+ *
+ *   CREATE OR REPLACE FUNCTION set_ls_number() RETURNS trigger AS $$
+ *   BEGIN
+ *     NEW.number := 'LS' || LPAD(nextval('logged_services_seq')::text, 7, '0');
+ *     RETURN NEW;
+ *   END;
+ *   $$ LANGUAGE plpgsql;
+ *
+ *   CREATE TRIGGER trg_ls_number BEFORE INSERT ON logged_services
+ *   FOR EACH ROW EXECUTE FUNCTION set_ls_number();
+ *
+ *   CREATE OR REPLACE FUNCTION set_red_number() RETURNS trigger AS $$
+ *   BEGIN
+ *     NEW.number := 'RED' || LPAD(nextval('loyalty_redemptions_seq')::text, 7, '0');
+ *     RETURN NEW;
+ *   END;
+ *   $$ LANGUAGE plpgsql;
+ *
+ *   CREATE TRIGGER trg_red_number BEFORE INSERT ON loyalty_redemptions
+ *   FOR EACH ROW EXECUTE FUNCTION set_red_number();
+ *
  *   CREATE INDEX idx_ls_customer ON logged_services(customer_id);
  *   CREATE INDEX idx_ls_redemption ON logged_services(redemption);
  *   CREATE INDEX idx_lr_triggered ON loyalty_redemptions(triggered_by);

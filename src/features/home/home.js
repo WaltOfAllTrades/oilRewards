@@ -19,8 +19,8 @@ function render() {
       <p id="input-error" class="error-text" hidden></p>
 
       <div class="home-actions">
-        <button id="go-btn" class="btn btn-outline-white">Go</button>
         <button id="paste-go-btn" class="btn btn-outline-red">Paste + Go</button>
+        <button id="go-btn" class="btn btn-outline-white">Go</button>
       </div>
     </div>
   `;

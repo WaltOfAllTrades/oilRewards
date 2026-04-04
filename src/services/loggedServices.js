@@ -1,19 +1,9 @@
 import { supabase } from '../config/supabase.js';
 
-function generateNumber() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = 'LS';
-  for (let i = 0; i < 7; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
 export async function create(customerId) {
-  const number = generateNumber();
   const { data, error } = await supabase
     .from('logged_services')
-    .insert({ number, customer_id: customerId })
+    .insert({ customer_id: customerId })
     .select()
     .single();
   if (error) throw error;

@@ -1,7 +1,7 @@
 import { getServices, getUnredeemedServices, redeemServices, logService } from '../../config/api.js';
 
 const RETURN_KEY = 'returnHome';
-const COUNTDOWN_MS = 180000;      // 3 minutes
+const COUNTDOWN_MS = 300000;      // 5 minutes
 const REDIRECT_WARN_MS = 30000;   // show overlay 30s before timeout
 let countdownInterval = null;
 let redirectOverlayShown = false;
@@ -14,7 +14,15 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function fmtDate(iso) {
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+
+function fmtDateFull(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', {
@@ -62,6 +70,15 @@ function updateCountdownDisplay(deadline) {
   }
   const min = Math.floor(remaining / 60);
   const sec = remaining % 60;
+  const timeStr = `${min}:${String(sec).padStart(2, '0')}`;
+
+  // Update inline countdown in the header widget
+  const inlineEl = document.getElementById('countdown-inline');
+  if (inlineEl) {
+    inlineEl.textContent = timeStr;
+  }
+
+  // Also keep the fixed-position countdown for scroll visibility
   let el = document.getElementById('countdown');
   if (!el) {
     el = document.createElement('div');
@@ -69,7 +86,7 @@ function updateCountdownDisplay(deadline) {
     el.className = 'countdown';
     document.body.appendChild(el);
   }
-  el.textContent = `↩ ${min}:${String(sec).padStart(2, '0')}`;
+  el.textContent = `↩ ${timeStr}`;
 
   // Show redirect warning overlay in last 30 seconds
   const remainingMs = remaining * 1000;
@@ -111,8 +128,11 @@ function render(customerId) {
   section.className = 'customer-section';
   section.innerHTML = `
     <div class="customer-header">
-      <button id="back-btn" class="btn btn-secondary">←</button>
-      <h2>Customer <span class="mono">${escapeHtml(customerId)}</span></h2>
+      <button id="back-btn" class="btn btn-secondary home-btn">
+        <span class="home-label">Home</span>
+        <span id="countdown-inline" class="countdown-inline"></span>
+      </button>
+      <h2>Customer ID: <span class="mono">${escapeHtml(customerId)}</span></h2>
       <button id="log-service-btn" class="btn btn-primary">Log Service</button>
     </div>
     <div id="redeem-banner" hidden></div>
@@ -128,19 +148,32 @@ function renderTable(services) {
     return '<p class="no-data">No services found for this customer.</p>';
   }
 
-  const rows = services.map((s, i) => `
-    <tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">
-      <td>${fmtDate(s.created_on)}</td>
-      <td>${s.redemption ? fmtDate(s.redemption_date) : '<span class="text-muted">—</span>'}</td>
+  const rows = services.map((s, i) => {
+    const tooltipLines = [
+      `Service: ${s.number || '—'}`,
+      `Date: ${fmtDateFull(s.created_on)}`,
+      `Redemption: ${s.redemption || '—'}`,
+      `Redeemed: ${s.redemption_date ? fmtDateFull(s.redemption_date) : '—'}`,
+    ];
+    if (s.is_redeemer) tooltipLines.push('★ FREE SERVICE');
+    const tooltip = escapeHtml(tooltipLines.join('\n'));
+
+    return `
+    <tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'} has-tooltip" data-tooltip="${tooltip}">
+      <td class="mono">${escapeHtml(s.number || '—')}</td>
+      <td>${fmtDateShort(s.created_on)}</td>
+      <td class="mono">${s.redemption ? escapeHtml(s.redemption) : '<span class="text-muted">—</span>'}</td>
       <td>${s.is_redeemer ? '<span class="badge-redeemer">★ FREE</span>' : ''}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   return `
     <table class="services-table">
       <thead>
         <tr>
-          <th>Service Date</th>
-          <th>Redeemed</th>
+          <th>Service #</th>
+          <th>Date</th>
+          <th>Redemption</th>
           <th></th>
         </tr>
       </thead>
