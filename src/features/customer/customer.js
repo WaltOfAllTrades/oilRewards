@@ -232,7 +232,7 @@ async function loadPage(container, customerId) {
 
     }
   } catch (err) {
-    wrap.innerHTML = '<p class="error-text">Failed to load services. Is the server running?</p>';
+    wrap.innerHTML = '<p class="error-text">Failed to load services.</p>';
     console.error(err);
   }
 }

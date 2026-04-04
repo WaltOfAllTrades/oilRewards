@@ -150,7 +150,7 @@ async function attemptDelete(value) {
 function showDoneCard() {
   showOverlay(`
     <div class="db-card">
-      <p class="db-card-label">All entries deleted.</p>
+      <p class="db-card-label">All services deleted.</p>
       <button id="db-done-btn" class="db-card-close">✕</button>
     </div>
   `);
