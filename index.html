@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Oil Rewards</title>
   <link rel="stylesheet" href="src/styles/main.css">
+  <link rel="stylesheet" href="src/features/login/login.css">
   <link rel="stylesheet" href="src/features/home/home.css">
   <link rel="stylesheet" href="src/features/customer/customer.css">
 </head>
@@ -12,10 +13,13 @@
   <div id="app">
     <header class="app-header">
       <h1>Jason's Oil Rewards</h1>
-      <h1>Jason's Oil Rewards</h1>
+      <button id="logout-btn" class="btn btn-secondary logout-btn" hidden>Sign Out</button>
     </header>
     <main id="main-content"></main>
   </div>
+
+  <button id="db-control-btn" class="db-control-trigger">Database Control</button>
+  <div id="db-overlay" class="db-overlay" hidden></div>
 
   <script type="module" src="src/app.js"></script>
 </body>

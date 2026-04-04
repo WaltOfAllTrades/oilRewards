@@ -1,5 +1,3 @@
-import { api } from '../../config/api.js';
-
 function cleanCustomerId(raw) {
   return raw.trim().replace(/\D/g, '');
 }
@@ -14,7 +12,7 @@ function render() {
   section.innerHTML = `
     <div class="home-card">
       <img src="src/drip.svg" alt="" class="drip-icon" />
-      <h2>Log Service</h2>
+      <h2>Service Log</h2>
 
       <input type="text" id="customer-id" placeholder="Customer ID (e.g. 042619)"
              maxlength="10" autocomplete="off" />
@@ -56,38 +54,16 @@ async function handlePasteAndGo() {
     const cleaned = cleanCustomerId(text);
     document.getElementById('customer-id').value = cleaned;
     clearError();
-    setTimeout(() => handleGo(), 200);
+    handleGo();
   } catch {
     showError('Clipboard access denied — type the ID manually');
   }
 }
 
-async function handleGo() {
+function handleGo() {
   const customerId = getValidatedId();
   if (!customerId) return;
-
-  const btn = document.getElementById('go-btn');
-  btn.disabled = true;
-  btn.textContent = '…';
-
-  try {
-    const service = {
-      service_id: new Date().toISOString(),
-      customer_id: customerId,
-      redemption_id: '',
-      redeemer: false,
-    };
-    await api('services', {
-      method: 'POST',
-      body: JSON.stringify(service),
-    });
-    window.location.hash = `#customer/${customerId}`;
-  } catch (err) {
-    showError('Failed to log service. Is the server running?');
-    console.error(err);
-    btn.disabled = false;
-    btn.textContent = 'Go';
-  }
+  window.location.hash = `#customer/${customerId}`;
 }
 
 export function initHome(container) {
@@ -96,6 +72,9 @@ export function initHome(container) {
 
   document.getElementById('go-btn').addEventListener('click', handleGo);
   document.getElementById('paste-go-btn').addEventListener('click', handlePasteAndGo);
+  document.getElementById('customer-id').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleGo();
+  });
 
   // Auto-focus input
   document.getElementById('customer-id').focus();

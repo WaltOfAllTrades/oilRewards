@@ -1,0 +1,33 @@
+.login-section {
+  display: flex;
+  justify-content: center;
+  padding-top: 3rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.login-card h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.login-card label {
+  margin-top: 0.5rem;
+}
+
+.login-submit {
+  margin-top: 1.25rem;
+  width: 100%;
+}

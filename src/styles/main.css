@@ -29,7 +29,7 @@ body {
 #app {
   max-width: 640px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 3rem;
   position: relative;
 }
 
@@ -48,6 +48,15 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+}
+
+.logout-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  min-height: auto;
 }
 
 
@@ -236,4 +245,163 @@ label {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-family: 'Consolas', 'Courier New', monospace;
+}
+
+/* ── Database Control ───────────────────────────────────── */
+.db-control-trigger {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: 640px;
+  padding: 0.6rem 1.5rem;
+  background: var(--bg);
+  color: var(--text-muted);
+  border: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.05em;
+  z-index: 10;
+}
+
+.db-control-trigger[hidden] {
+  display: none;
+}
+
+.db-control-trigger:hover {
+  color: var(--text);
+}
+
+/* Hide db trigger on very small viewports to avoid overlap */
+@media (max-height: 420px) {
+  .db-control-trigger {
+    display: none;
+  }
+}
+
+.db-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  display: none;
+}
+
+.db-overlay:not([hidden]) {
+  display: flex;
+}
+
+.db-card {
+  background: #000;
+  border: 1px solid #fff;
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  min-width: 280px;
+  max-width: 90vw;
+  position: relative;
+}
+
+.db-card-x {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  padding: 0;
+  margin: 0;
+}
+
+.db-card-label {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.db-card-delete {
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  width: 100%;
+}
+
+.db-card-delete:hover {
+  background: #b71c1c;
+}
+
+.db-confirm-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  min-height: 48px;
+  background: var(--bg-alt);
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.db-confirm-input:focus {
+  outline: none;
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.db-card-close {
+  background: transparent;
+  border: 1px solid #555;
+  color: var(--text);
+  font-size: 1.25rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: 0.75rem;
+}
+
+.db-card-close:hover {
+  border-color: var(--text);
+}
+
+/* ── Redirect overlay ───────────────────────────────────── */
+.redirect-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.redirect-card {
+  background: var(--bg-alt);
+  border: 1px solid #333;
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  min-width: 280px;
+}
+
+.redirect-card p {
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.redirect-card strong {
+  color: var(--accent);
+  font-size: 1.3rem;
 }

@@ -1,0 +1,320 @@
+================================================================================
+OIL REWARDS — SUPABASE REFACTOR SPECIFICATION & IMPLEMENTATION GUIDE
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Convert Oil Rewards from a json-server backend to Supabase (Postgres + Auth).
+The flat "services" table is replaced by two relational tables:
+  - logged_services   (oil change visits)
+  - loyalty_redemptions (free-service redemptions)
+
+A Supabase Auth login page gates all application access. All existing UI
+workflows remain identical. The architecture is designed so that once a
+Supabase project is provisioned, only two values (URL + anon key) need to be
+supplied in a single config file.
+
+
+2. CURRENT STATE — UI ELEMENT INVENTORY
+--------------------------------------------------------------------------------
+
+2.1  index.html — App Shell
+  ELEMENT                   BEHAVIOR
+  ─────────────────────────────────────────────────────────────────────────
+  <header> "Jason's Oil     Static branding title
+    Rewards"
+  <main id="main-content">  SPA mount point — router swaps content here
+  #db-control-btn           Fixed bottom bar button; opens Database Control
+                            overlay for bulk-delete operations
+  #db-overlay               Modal overlay for delete-all confirmation flow
+
+2.2  Home Page (#home) — src/features/home/home.js
+  ELEMENT                   BEHAVIOR
+  ─────────────────────────────────────────────────────────────────────────
+  .drip-icon                Decorative SVG oil drip image
+  h2 "Service Log"          Page heading
+  #customer-id input        Text field for 6-digit customer ID entry;
+                            auto-focused on load, accepts keyboard Enter
+  #input-error              Hidden <p> for inline validation messages
+  #go-btn "Go"              Validates input → navigates to #customer/{id}
+  #paste-go-btn             Reads clipboard → fills input → navigates
+    "Paste + Go"            Shows error if clipboard denied
+
+2.3  Customer Page (#customer/:id) — src/features/customer/customer.js
+  ELEMENT                   BEHAVIOR
+  ─────────────────────────────────────────────────────────────────────────
+  #back-btn "←"             Stops countdown, navigates to #home
+  h2 "Customer {id}"        Shows current customer ID
+  #log-service-btn          POSTs new service record, refreshes table
+    "Log Service"
+  #redeem-banner            Conditional area:
+                              If unredeemed ≥ 10: shows Redeem button
+                              If unredeemed < 10: shows progress bar X/10
+  #redeem-btn               Redeems oldest 10 unredeemed services, sets
+    "Redeem free Oil          redemption data, refreshes view
+    Change"
+  .progress-bar/fill        Visual progress toward next free service
+  .services-table           Full history table with columns:
+                              - Service Date (formatted ISO → locale)
+                              - Redeemed (date or "—")
+                              - Badge ("★ FREE" on redeemer row)
+  #countdown                Fixed-position 2-min auto-redirect timer;
+                              persisted in localStorage; checks on
+                              visibility change
+
+2.4  Database Control Overlay — src/app.js
+  ELEMENT                   BEHAVIOR
+  ─────────────────────────────────────────────────────────────────────────
+  .db-card (step 1)         "Delete all logged services" button
+  .db-card (step 2)         "Type DELETEALL to confirm" input + submit
+  .db-card (step 3)         "All entries deleted." success + close button
+  Overlay click-outside     Dismisses overlay
+
+
+3. CURRENT USE CASES & WORKFLOWS
+--------------------------------------------------------------------------------
+
+UC-1  LOG A SERVICE
+  1. User enters 6-digit customer ID on home page (or pastes from clipboard)
+  2. Clicks "Go" → navigates to customer page
+  3. Clicks "Log Service" → POST service record → table refreshes
+  4. Progress bar updates (e.g., "4 of 10")
+
+UC-2  VIEW CUSTOMER HISTORY
+  1. User navigates to #customer/{id} (via Go or Paste+Go)
+  2. All services for that customer are fetched and displayed newest-first
+  3. Redeemed services show the redemption date; redeemer rows show ★ FREE
+
+UC-3  REDEEM FREE SERVICE
+  1. Customer page loads → unredeemed count ≥ 10
+  2. Redeem button appears (pulsing animation)
+  3. User clicks "Redeem free Oil Change"
+  4. Oldest 10 unredeemed services are PATCHed:
+     - All 10 get the same redemption_id timestamp
+     - The 10th (newest of batch) gets redeemer = true
+  5. Table refreshes, progress resets for remaining unredeemed
+
+UC-4  AUTO-REDIRECT HOME
+  1. Customer page sets localStorage deadline = now + 2 min
+  2. Countdown displays in fixed corner
+  3. On expiry (or tab re-focus after expiry) → navigate to #home
+
+UC-5  BULK DELETE (Admin)
+  1. Click "Database Control" → overlay step 1
+  2. Click "Delete all logged services" → step 2 confirmation
+  3. Type DELETEALL → submits → DELETEs all service records
+  4. Success card with close button → navigates home
+
+
+4. NEW DATA MODEL — SUPABASE TABLES
+--------------------------------------------------------------------------------
+
+TABLE: logged_services
+  Column        | Type      | Notes
+  ───────────── | ───────── | ───────────────────────────────────────────
+  id            | uuid      | PK, default gen_random_uuid()
+  number        | text      | Format "LSXXXXXXX" (LS + 7-char unique)
+                |           | Generated client-side at creation
+  customer_id   | text      | 6-digit string, NOT NULL
+  created_on    | timestamptz | default now(), service timestamp
+  redemption    | text      | NULL = unredeemed; references
+                |           | loyalty_redemptions.number when redeemed
+
+TABLE: loyalty_redemptions
+  Column        | Type      | Notes
+  ───────────── | ───────── | ───────────────────────────────────────────
+  id            | uuid      | PK, default gen_random_uuid()
+  number        | text      | Format "REDXXXXXXX" (RED + 7-char unique)
+  created_on    | timestamptz | default now(), redemption timestamp
+  triggered_by  | text      | References logged_services.number (the
+                |           | 10th service that triggered redemption)
+
+RELATIONSHIPS:
+  logged_services.redemption → loyalty_redemptions.number (many-to-one)
+  loyalty_redemptions.triggered_by → logged_services.number (one-to-one)
+
+MAPPING FROM OLD MODEL:
+  Old service record        →  logged_services row
+  Old redemption_id (group) →  loyalty_redemptions row
+  Old redeemer = true row   →  The service whose .number is stored in
+                               loyalty_redemptions.triggered_by
+
+
+5. MIGRATION MAPPING — OLD FIELDS TO NEW
+--------------------------------------------------------------------------------
+  OLD FIELD        →  NEW LOCATION
+  ────────────────────────────────────────────────────────
+  service_id       →  logged_services.created_on
+  customer_id      →  logged_services.customer_id (unchanged)
+  redemption_id    →  logged_services.redemption (now stores
+                      loyalty_redemptions.number instead of timestamp)
+  redeemer         →  REMOVED from logged_services; derived from
+                      loyalty_redemptions.triggered_by matching
+                      logged_services.number
+  id               →  logged_services.id (now uuid)
+
+
+6. NEW FILE ARCHITECTURE
+--------------------------------------------------------------------------------
+  oilRewards/
+  ├── index.html                        # Add login CSS link
+  ├── db.json                           # KEEP for dev fallback
+  ├── src/
+  │   ├── app.js                        # Add auth gate before routing
+  │   ├── config/
+  │   │   ├── supabase.js               # NEW — Supabase client init
+  │   │   └── api.js                    # REWRITE — abstract data layer
+  │   ├── services/
+  │   │   ├── auth.js                   # NEW — login/logout/session
+  │   │   ├── loggedServices.js         # NEW — CRUD for logged_services
+  │   │   └── loyaltyRedemptions.js     # NEW — CRUD for loyalty_redemptions
+  │   ├── features/
+  │   │   ├── login/
+  │   │   │   ├── login.js              # NEW — login page
+  │   │   │   └── login.css             # NEW — login styles
+  │   │   ├── home/
+  │   │   │   ├── home.js               # UPDATE — use new data service
+  │   │   │   └── home.css              # KEEP
+  │   │   └── customer/
+  │   │       ├── customer.js           # UPDATE — two-table logic
+  │   │       └── customer.css          # KEEP
+  │   └── styles/
+  │       └── main.css                  # ADD login-related global styles
+
+
+7. IMPLEMENTATION PLAN — STEP BY STEP
+--------------------------------------------------------------------------------
+
+STEP 1: Supabase Client (src/config/supabase.js)
+  - Import supabase-js from CDN (esm.sh)
+  - Export createClient with placeholder URL + anon key
+  - Single shared client instance
+
+STEP 2: Auth Service (src/services/auth.js)
+  - signIn(email, password) → supabase.auth.signInWithPassword
+  - signOut() → supabase.auth.signOut
+  - getSession() → supabase.auth.getSession
+  - onAuthStateChange(callback) → supabase.auth.onAuthStateChange
+  - All return consistent { data, error } shape
+
+STEP 3: Data Services
+  src/services/loggedServices.js:
+    - generateNumber() → "LS" + 7 random alphanumeric chars
+    - create(customerId) → insert into logged_services
+    - getByCustomer(customerId) → select where customer_id, order desc
+    - getUnredeemedByCustomer(customerId) → where redemption IS NULL, asc
+    - markRedeemed(ids, redemptionNumber) → update redemption column
+    - deleteAll() → delete from logged_services (admin)
+
+  src/services/loyaltyRedemptions.js:
+    - generateNumber() → "RED" + 7 random alphanumeric chars
+    - create(triggeredByNumber) → insert into loyalty_redemptions
+    - getByRedemptionNumber(number) → select by number
+
+STEP 4: Config API Rewrite (src/config/api.js)
+  - REMOVE old fetch wrapper
+  - EXPORT data service functions as unified interface
+  - Feature code calls api.logService(), api.getServices(), etc.
+  - Under the hood, calls Supabase services
+
+STEP 5: Login Feature (src/features/login/)
+  - login.js: renders email + password form, calls auth.signIn
+  - login.css: centered card matching app theme
+  - On success: triggers route to #home
+  - On failure: inline error message
+
+STEP 6: Auth Gate (src/app.js)
+  - On DOMContentLoaded: check session
+  - If no session → render login page, block hash routing
+  - If session exists → proceed with normal routing
+  - onAuthStateChange: re-evaluate gate on sign-in / sign-out
+  - Add logout button to app header (visible when authenticated)
+
+STEP 7: Customer Feature Update (src/features/customer/customer.js)
+  - Replace api() calls with data service calls
+  - Redemption flow:
+    1. Fetch unredeemed services (redemption IS NULL)
+    2. Take oldest 10
+    3. The 10th service's .number is the trigger
+    4. Create loyalty_redemption row (triggered_by = 10th.number)
+    5. Update all 10 services: set redemption = new redemption.number
+    6. Refresh table
+  - Table display:
+    - "Service Date" → logged_services.created_on
+    - "Redeemed" → if redemption is set, show date from joined
+      loyalty_redemptions.created_on (or just "Yes"/"—")
+    - "★ FREE" badge → if this service.number matches any
+      loyalty_redemptions.triggered_by
+
+STEP 8: Home Feature Update (src/features/home/home.js)
+  - Replace api() POST call with loggedServices.create()
+  - No other functional changes needed
+
+STEP 9: Database Control Update (src/app.js)
+  - Replace per-record DELETE loop with loggedServices.deleteAll()
+  - Also delete all loyalty_redemptions in same flow
+
+STEP 10: index.html Updates
+  - Add login.css stylesheet link
+  - Add Supabase JS CDN script (or rely on ESM import)
+
+
+8. NUMBER GENERATION SCHEMES
+--------------------------------------------------------------------------------
+  Service number:    "LS" + 7 chars  → e.g. "LS3kF9m2x"
+  Redemption number: "RED" + 7 chars → e.g. "REDaB7q1Yz"
+
+  Generation: crypto.randomUUID().slice(0,7) or similar
+  Collision risk: negligible for this scale
+
+
+9. SUPABASE FOLLOW-UP STEPS (POST-DEPLOY)
+--------------------------------------------------------------------------------
+After the Supabase project is created, these are the ONLY steps needed:
+
+  □ 1. Create Supabase project at supabase.com
+  □ 2. Run table creation SQL (provided in src/config/supabase.js comments)
+  □ 3. Set Row Level Security policies:
+        - logged_services: authenticated users can SELECT, INSERT, UPDATE, DELETE
+        - loyalty_redemptions: authenticated users can SELECT, INSERT
+  □ 4. Create a user account in Supabase Auth dashboard
+  □ 5. Replace placeholders in src/config/supabase.js:
+        - SUPABASE_URL → your project URL
+        - SUPABASE_ANON_KEY → your anon/public key
+  □ 6. Remove json-server dependency (optional, can keep for dev)
+
+  That's it. The app is live.
+
+
+10. SQL FOR TABLE CREATION (Reference)
+--------------------------------------------------------------------------------
+
+  CREATE TABLE logged_services (
+    id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    number      text NOT NULL UNIQUE,
+    customer_id text NOT NULL,
+    created_on  timestamptz DEFAULT now() NOT NULL,
+    redemption  text  -- NULL = unredeemed; holds loyalty_redemptions.number
+  );
+
+  CREATE TABLE loyalty_redemptions (
+    id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    number       text NOT NULL UNIQUE,
+    created_on   timestamptz DEFAULT now() NOT NULL,
+    triggered_by text NOT NULL  -- logged_services.number of the 10th service
+  );
+
+  -- Indexes
+  CREATE INDEX idx_ls_customer ON logged_services(customer_id);
+  CREATE INDEX idx_ls_redemption ON logged_services(redemption);
+  CREATE INDEX idx_lr_triggered ON loyalty_redemptions(triggered_by);
+
+  -- RLS (apply after enabling RLS on both tables)
+  ALTER TABLE logged_services ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE loyalty_redemptions ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "Authenticated full access" ON logged_services
+    FOR ALL USING (auth.role() = 'authenticated');
+
+  CREATE POLICY "Authenticated full access" ON loyalty_redemptions
+    FOR ALL USING (auth.role() = 'authenticated');

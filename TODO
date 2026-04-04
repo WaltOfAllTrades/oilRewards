@@ -1,8 +1,23 @@
-Treat every line as an independent instruction
-in header "jason's oil rewards" is appearing twice.
-On home, the drip icon needs some space between it and "Log Service"
-Change "Log Service" to Service Log.
-On customer Home button should just be back arrow.
-Oppisite (rigth) the home button add a "Log Service" button that calls the function and refreshs/queries list
-Center "Customer <number>".
-Instead of the banner that appears when the history is valid for free oil change redemption just add an attention grabbing button that says "Redeem free Oil Change". all related relationships between logging service and redeem button must remain for the idenitification of which service is the redeemer.
+You must fully assess and comprehend the entire codebase and file structure as you will be responsible for converting The backend to using two supabase tables.
+All existing front end must function identically with the addition of a login page gating everything else.
+Your task is to prepare the file architecture and code base to prepare for a wire up of Supabase infrastructure.
+Seperate concerns and abstract as needed.
+The goal is to have a fully functional implementation with bare minimum follow up steps required after the Supabase infra is deployed and available.
+You will write a product spec and implementation guide TODO_SUPABASE_REFACTOR
+In the guide inventory all of the UI elements (detail what they do) and use cases/workflows 
+You will then execute the implelentation
+
+The new tables will be (unofficially named you create placeholders/harnesses)
+Logged Services
+-ID
+-Number (LSXXXXXXX)
+-Customer ID
+-Created on
+-Redemption (redemptions.number)
+
+Loyalty Redemptions
+-ID
+-Created on
+-Number (REDXXXXXXX)
+-Triggered by (services.number)
+

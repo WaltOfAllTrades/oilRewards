@@ -1,8 +1,10 @@
-import { api } from '../../config/api.js';
+import { getServices, getUnredeemedServices, redeemServices, logService } from '../../config/api.js';
 
 const RETURN_KEY = 'returnHome';
-const COUNTDOWN_MS = 120000;
+const COUNTDOWN_MS = 180000;      // 3 minutes
+const REDIRECT_WARN_MS = 30000;   // show overlay 30s before timeout
 let countdownInterval = null;
+let redirectOverlayShown = false;
 
 /* ── Helpers ───────────────────────────────────────────── */
 
@@ -34,8 +36,11 @@ function stopCountdown() {
   localStorage.removeItem(RETURN_KEY);
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = null;
+  redirectOverlayShown = false;
   const el = document.getElementById('countdown');
   if (el) el.remove();
+  const overlay = document.getElementById('redirect-overlay');
+  if (overlay) overlay.remove();
 }
 
 function checkExpiredCountdown() {
@@ -65,6 +70,38 @@ function updateCountdownDisplay(deadline) {
     document.body.appendChild(el);
   }
   el.textContent = `↩ ${min}:${String(sec).padStart(2, '0')}`;
+
+  // Show redirect warning overlay in last 30 seconds
+  const remainingMs = remaining * 1000;
+  if (remainingMs <= REDIRECT_WARN_MS && !redirectOverlayShown) {
+    redirectOverlayShown = true;
+    showRedirectOverlay();
+  }
+  // Update overlay countdown if visible
+  const overlayTimer = document.getElementById('redirect-timer');
+  if (overlayTimer) {
+    overlayTimer.textContent = `${sec}s`;
+  }
+}
+
+function showRedirectOverlay() {
+  let overlay = document.getElementById('redirect-overlay');
+  if (overlay) return;
+  overlay = document.createElement('div');
+  overlay.id = 'redirect-overlay';
+  overlay.className = 'redirect-overlay';
+  overlay.innerHTML = `
+    <div class="redirect-card">
+      <p>Redirecting to home in: <strong id="redirect-timer"></strong></p>
+      <button id="cancel-redirect-btn" class="btn btn-secondary">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('cancel-redirect-btn').addEventListener('click', () => {
+    // Cancel: restart the full countdown
+    stopCountdown();
+    startCountdown();
+  });
 }
 
 /* ── Render ────────────────────────────────────────────── */
@@ -74,8 +111,9 @@ function render(customerId) {
   section.className = 'customer-section';
   section.innerHTML = `
     <div class="customer-header">
-      <button id="back-btn" class="btn btn-secondary">← Home</button>
+      <button id="back-btn" class="btn btn-secondary">←</button>
       <h2>Customer <span class="mono">${escapeHtml(customerId)}</span></h2>
+      <button id="log-service-btn" class="btn btn-primary">Log Service</button>
     </div>
     <div id="redeem-banner" hidden></div>
     <div id="services-table-wrap">
@@ -92,9 +130,9 @@ function renderTable(services) {
 
   const rows = services.map((s, i) => `
     <tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">
-      <td>${fmtDate(s.service_id)}</td>
-      <td>${s.redemption_id ? fmtDate(s.redemption_id) : '<span class="text-muted">—</span>'}</td>
-      <td>${s.redeemer ? '<span class="badge-redeemer">★ FREE</span>' : ''}</td>
+      <td>${fmtDate(s.created_on)}</td>
+      <td>${s.redemption ? fmtDate(s.redemption_date) : '<span class="text-muted">—</span>'}</td>
+      <td>${s.is_redeemer ? '<span class="badge-redeemer">★ FREE</span>' : ''}</td>
     </tr>`).join('');
 
   return `
@@ -114,16 +152,9 @@ function renderRedeemBanner(unredeemedCount) {
   const banner = document.getElementById('redeem-banner');
   if (unredeemedCount >= 10) {
     banner.hidden = false;
-    banner.className = 'redeem-banner';
+    banner.className = 'redeem-btn-wrap';
     banner.innerHTML = `
-      <div class="redeem-content">
-        <p class="redeem-title">🎉 FREE Oil Change Earned!</p>
-        <p class="redeem-sub">${unredeemedCount} unredeemed services — 10 will be applied.</p>
-        <div class="redeem-actions">
-          <button id="redeem-btn" class="btn btn-success">Redeem Free Service</button>
-          <button id="cancel-redeem-btn" class="btn btn-secondary">Cancel</button>
-        </div>
-      </div>
+      <button id="redeem-btn" class="btn btn-redeem">Redeem free Oil Change</button>
     `;
   } else {
     banner.hidden = false;
@@ -139,48 +170,16 @@ function renderRedeemBanner(unredeemedCount) {
   }
 }
 
-/* ── Data ──────────────────────────────────────────────── */
-
-async function fetchServices(customerId) {
-  return api(`services?customer_id:startsWith=${encodeURIComponent(customerId)}&_sort=-service_id`);
-}
-
-async function fetchUnredeemed(customerId) {
-  return api(`services?customer_id:startsWith=${encodeURIComponent(customerId)}&redemption_id:eq=&_sort=service_id`);
-}
-
-async function redeemServices(customerId) {
-  const unredeemed = await fetchUnredeemed(customerId);
-  if (unredeemed.length < 10) return false;
-
-  const batch = unredeemed.slice(0, 10);
-  const redemptionId = new Date().toISOString();
-
-  const updates = batch.map((s, i) => {
-    const isRedeemer = i === 9; // 10th (newest of the batch, last in asc order)
-    return api(`services/${s.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        redemption_id: redemptionId,
-        redeemer: isRedeemer,
-      }),
-    });
-  });
-
-  await Promise.all(updates);
-  return true;
-}
-
 /* ── Page controller ───────────────────────────────────── */
 
 async function loadPage(container, customerId) {
   const wrap = document.getElementById('services-table-wrap');
 
   try {
-    const services = await fetchServices(customerId);
+    const services = await getServices(customerId);
     wrap.innerHTML = renderTable(services);
 
-    const unredeemedCount = services.filter(s => !s.redemption_id).length;
+    const unredeemedCount = services.filter(s => !s.redemption).length;
     renderRedeemBanner(unredeemedCount);
 
     if (unredeemedCount >= 10) {
@@ -197,9 +196,7 @@ async function loadPage(container, customerId) {
           console.error(err);
         }
       });
-      document.getElementById('cancel-redeem-btn').addEventListener('click', () => {
-        document.getElementById('redeem-banner').hidden = true;
-      });
+
     }
   } catch (err) {
     wrap.innerHTML = '<p class="error-text">Failed to load services. Is the server running?</p>';
@@ -217,6 +214,21 @@ export function initCustomer(container, customerId) {
   document.getElementById('back-btn').addEventListener('click', () => {
     stopCountdown();
     window.location.hash = '#home';
+  });
+
+  document.getElementById('log-service-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('log-service-btn');
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      await logService(customerId);
+      await loadPage(container, customerId);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Log Service';
+    }
   });
 
   // Visibility change: check expiry when tab re-focused
