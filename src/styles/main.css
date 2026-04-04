@@ -1,0 +1,239 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0a;
+  --bg-alt: #111111;
+  --bg-row: #1a1a1a;
+  --text: #f5f5f5;
+  --text-muted: #999;
+  --accent: #d32f2f;
+  --accent-dim: #b71c1c;
+  --danger: #d32f2f;
+  --success: #43a047;
+  --radius: 6px;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  position: relative;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.app-header h1 {
+  font-size: 1.75rem;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+
+/* Underline under header */
+.app-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  border-radius: 0 0 50% 50%;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.5rem;
+  min-height: 48px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:active {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-primary:hover {
+  background: var(--accent-dim);
+}
+
+.btn-secondary {
+  background: #222;
+  color: var(--text);
+  border: 1px solid #333;
+}
+
+.btn-secondary:hover {
+  background: #2a2a2a;
+}
+
+.btn-outline-white {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--text);
+  font-weight: 700;
+}
+
+.btn-outline-white:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-outline-red {
+  background: transparent;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+  font-weight: 700;
+}
+
+.btn-outline-red:hover {
+  background: rgba(211, 47, 47, 0.1);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-danger:hover {
+  background: #b71c1c;
+}
+
+.btn-success {
+  background: var(--success);
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-success:hover {
+  background: #2e7d32;
+}
+
+/* ── Form elements ──────────────────────────────────────── */
+input[type="text"],
+input[type="number"],
+textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  min-height: 48px;
+  background: var(--bg-alt);
+  color: var(--text);
+  border: 1px solid #333;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  letter-spacing: 0.1em;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+/* ── Utilities ──────────────────────────────────────────── */
+.error-text {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.success-text {
+  color: var(--success);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.gold-divider {
+  border: none;
+  border-top: 1px solid var(--accent-dim);
+  opacity: 0.3;
+  margin: 1.5rem 0;
+}
+
+.mono {
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+/* ── Oil drip on sides (decorative) ─────────────────────── */
+#app::before,
+#app::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  width: 3px;
+  height: 120px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  opacity: 0.15;
+  border-radius: 0 0 50% 50%;
+}
+
+#app::before {
+  left: 1rem;
+}
+
+#app::after {
+  right: 1rem;
+}
+
+/* ── Countdown ──────────────────────────────────────────── */
+.countdown {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background: var(--bg-alt);
+  border: 1px solid #333;
+  border-radius: var(--radius);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: 'Consolas', 'Courier New', monospace;
+}

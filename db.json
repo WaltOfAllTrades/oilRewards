@@ -1,0 +1,124 @@
+{
+  "services": [
+    {
+      "service_id": "2026-04-03T10:00:00.001Z",
+      "customer_id": "123456",
+      "redemption_id": "",
+      "redeemer": false,
+      "id": "w8Rh_6Koj1I"
+    },
+    {
+      "service_id": "2026-04-04T01:43:25.211Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-03T12:00:00.000Z",
+      "redeemer": true,
+      "id": "jQnNFOjPF9Y"
+    },
+    {
+      "service_id": "2026-04-04T01:44:18.986Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "pEZRhVnBRc0"
+    },
+    {
+      "service_id": "2026-04-04T01:52:08.856Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "DLXgZDf34fg"
+    },
+    {
+      "service_id": "2026-04-04T01:52:10.904Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "CETGgDIyY4k"
+    },
+    {
+      "service_id": "2026-04-04T01:57:37.045Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "VeV5bwOLvRI"
+    },
+    {
+      "service_id": "2026-04-04T01:58:26.982Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "Bjt3eegt-2s"
+    },
+    {
+      "service_id": "2026-04-04T01:58:30.524Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "1sLJz-tt-nI"
+    },
+    {
+      "service_id": "2026-04-04T01:58:33.321Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "w1_o35Rt6Qs"
+    },
+    {
+      "service_id": "2026-04-04T01:58:41.028Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "HzhyVRrBZLs"
+    },
+    {
+      "service_id": "2026-04-04T01:58:48.144Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": false,
+      "id": "YYRv5z2s_hY"
+    },
+    {
+      "service_id": "2026-04-04T01:58:51.108Z",
+      "customer_id": "121212",
+      "redemption_id": "2026-04-04T01:59:09.523Z",
+      "redeemer": true,
+      "id": "g2TED5gUwjk"
+    },
+    {
+      "service_id": "2026-04-04T01:59:06.352Z",
+      "customer_id": "121212",
+      "redemption_id": "",
+      "redeemer": false,
+      "id": "WzfZGYp1LKg"
+    },
+    {
+      "service_id": "2026-04-04T01:59:18.038Z",
+      "customer_id": "121212",
+      "redemption_id": "",
+      "redeemer": false,
+      "id": "Fsr7rXZXCak"
+    },
+    {
+      "service_id": "2026-04-04T10:40:04.674Z",
+      "customer_id": "121212",
+      "redemption_id": "",
+      "redeemer": false,
+      "id": "_KcoUQck7jU"
+    },
+    {
+      "service_id": "2026-04-04T10:43:03.446Z",
+      "customer_id": "121212",
+      "redemption_id": "",
+      "redeemer": false,
+      "id": "naQUKXk6HVY"
+    },
+    {
+      "service_id": "2026-04-04T10:58:45.024Z",
+      "customer_id": "121212",
+      "redemption_id": "",
+      "redeemer": false,
+      "id": "xKSj1P2exN8"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

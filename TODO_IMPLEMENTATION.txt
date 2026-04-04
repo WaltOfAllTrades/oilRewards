@@ -1,0 +1,198 @@
+================================================================================
+OIL REWARDS — PRODUCT SPECIFICATION & IMPLEMENTATION GUIDE
+================================================================================
+
+1. OVERVIEW
+--------------------------------------------------------------------------------
+Oil change loyalty tracker. Every 10th oil change is free. Single-user local
+app. One data table, two pages, one redemption flow.
+
+
+2. DATA MODEL
+--------------------------------------------------------------------------------
+Table: "services" (stored in db.json)
+
+  Field          | Type      | Description
+  -------------- | --------- | -----------------------------------------------
+  id             | number    | Auto-increment (json-server default)
+  service_id     | string    | ISO datetime to ms — generated at creation time
+                 |           | This IS the service date
+  customer_id    | string    | 6-digit numeric string (e.g. "004821")
+  redemption_id  | string    | ISO datetime to ms — set when redeemed
+                 |           | Blank ("") means unredeemed
+  redeemer       | boolean   | true only on the 10th service that triggered
+                 |           | the redemption. false for all others.
+
+No separate customer table. The customer_id is just a lookup key.
+
+
+3. PAGES & NAVIGATION
+--------------------------------------------------------------------------------
+PAGE 1: HOME (default)
+  - Text input for customer_id
+  - "Paste" button (reads clipboard, fills input)
+  - Input is trimmed, stripped of non-digits, validated: exactly 6 digits
+  - "Log Service" button → creates service → navigates to PAGE 2
+  - "View Past Services" button → prompts for customer_id → navigates to PAGE 2
+    (without creating a new service)
+
+PAGE 2: CUSTOMER SERVICES
+  - Header shows customer_id
+  - Table of ALL services for that customer_id, ordered newest → oldest
+  - Columns: service_id (date), redemption_id (date or "—"), redeemer badge
+  - If ≥10 unredeemed services exist: show redemption prompt (see section 4)
+  - If <10 unredeemed: show count remaining (e.g. "3 of 10 toward free service")
+  - "Back to Home" button (always visible)
+  - 2-minute auto-redirect countdown (see section 5)
+
+
+4. REDEMPTION FLOW (on PAGE 2)
+--------------------------------------------------------------------------------
+TRIGGER:
+  After loading services, count services where redemption_id === "".
+  If count >= 10, show a redemption banner/prompt.
+
+PROMPT:
+  "This customer qualifies for a FREE oil change! Redeem now?"
+  Two buttons: [Redeem Free Service] [Cancel]
+
+ON REDEEM:
+  Step 1 — Generate a single redemption datetime string (ISO ms precision).
+  Step 2 — Query all unredeemed services for this customer (redemption_id === ""),
+            ordered OLDEST → NEWEST.
+  Step 3 — Take the first 10 from that list.
+  Step 4 — The 10th (newest) in that batch: set redeemer = true,
+            set redemption_id = the datetime from Step 1.
+  Step 5 — The other 9: set redeemer = false (already is),
+            set redemption_id = the same datetime from Step 1.
+  Step 6 — PATCH/PUT each of the 10 records to json-server.
+  Step 7 — Refresh the services table on PAGE 2.
+  Step 8 — Show success message: "Free service redeemed!"
+
+ON CANCEL:
+  Dismiss the prompt. Do nothing.
+
+IMPORTANT: Only 10 services are redeemed per redemption. If a customer has 20
+unredeemed services, only the oldest 10 are redeemed. The next 10 remain and
+will qualify for another redemption.
+
+
+5. 2-MINUTE AUTO-REDIRECT
+--------------------------------------------------------------------------------
+When PAGE 2 loads, store the target return time in localStorage:
+  key: "returnHome"
+  value: Date.now() + 120000
+
+Display a visible countdown timer on screen.
+
+On every page load / visibility change, check:
+  if (Date.now() >= storedReturnTime) → navigate to home, clear the key.
+
+This ensures the redirect works even if the user closes the tab and reopens it
+later — the stored timestamp is checked, not a running setInterval.
+
+The countdown ALSO runs a setInterval(1000) for the live display while the
+tab is open.
+
+Clear the localStorage key when navigating home via button or auto-redirect.
+
+
+6. INPUT VALIDATION
+--------------------------------------------------------------------------------
+  Raw input → .trim() → .replace(/\D/g, '') → must match /^\d{6}$/
+
+  If invalid after cleaning:
+    Show inline error: "Customer ID must be exactly 6 digits"
+    Do not submit.
+
+  Clipboard paste button:
+    await navigator.clipboard.readText()
+    Feed result through the same trim → clean → validate pipeline.
+    On clipboard permission denied: show inline error.
+
+
+7. UI / VISUAL DESIGN
+--------------------------------------------------------------------------------
+Theme: white-on-black, spartan, minimal
+  - Background: #0a0a0a
+  - Text: #f5f5f5
+  - Accent: oil gold (#c8a415) for buttons, badges, highlights
+  - Font: system-ui, monospace for data/IDs
+
+Oil motifs (CSS only, no images):
+  - Subtle oil-drip shapes on header/footer using CSS pseudo-elements, border-radius
+  - Barrel icon via CSS or unicode character (🛢️) in header
+  - Thin golden divider lines
+
+Layout:
+  - Single centered column, max-width 640px
+  - Large touch-friendly buttons (min 48px height)
+  - Table uses alternating row shading (#111 / #1a1a1a)
+  - Redemption prompt is a full-width banner with gold border
+  - Countdown timer displayed subtly in top-right or bottom of page
+
+
+8. IMPLEMENTATION PLAN — FILE BY FILE
+--------------------------------------------------------------------------------
+
+src/config/api.js ............... DONE (exists, fetch wrapper)
+db.json ......................... UPDATE — rename "entries" → "services", empty array
+
+src/app.js ...................... UPDATE — add simple hash router (#home, #customer)
+                                  Import and init both features
+
+src/styles/main.css ............. REWRITE — black background, white text, oil theme,
+                                  CSS oil-drip decorations, gold accents
+
+src/features/home/
+  home.js ....................... NEW — render home page form
+                                  - Text input + paste button + log button
+                                  - Input validation (trim, clean, 6-digit check)
+                                  - On submit: POST /services, navigate to #customer
+                                  - "View Past" button: validate input, navigate
+                                    to #customer without creating service
+  home.css ...................... NEW — home page specific styles
+
+src/features/customer/
+  customer.js ................... NEW — render customer services page
+                                  - Fetch GET /services?customer_id={id}&_sort=-service_id
+                                  - Render table
+                                  - Count unredeemed, show redemption prompt if ≥10
+                                  - Redeem flow: PATCH 10 records
+                                  - 2-min countdown + localStorage logic
+                                  - Back button
+  customer.css .................. NEW — table styles, redemption banner, countdown
+
+DELETE: src/features/entries/ ... Old feature, no longer needed
+
+index.html ...................... UPDATE — remove entries.css link, add home.css
+                                  and customer.css links
+
+
+9. API CALLS SUMMARY
+--------------------------------------------------------------------------------
+  POST   /services              — Log new service
+         Body: { service_id, customer_id, redemption_id: "", redeemer: false }
+
+  GET    /services?customer_id={id}&_sort=-service_id
+                                — All services for a customer, newest first
+
+  GET    /services?customer_id={id}&redemption_id=
+                                — Unredeemed services for a customer
+
+  PATCH  /services/{id}         — Update redemption_id and redeemer on a record
+         Body: { redemption_id, redeemer }
+
+
+10. EDGE CASES
+--------------------------------------------------------------------------------
+  - Customer has exactly 10 unredeemed: prompt appears, standard flow.
+  - Customer has 20+ unredeemed: only oldest 10 redeemed per action.
+    After refresh, prompt appears again for the next 10.
+  - Customer has 9 unredeemed + logs a new one: now 10 → prompt appears.
+  - Redemption cancelled: nothing changes, user can still navigate freely.
+  - Tab closed during countdown: on reopen, localStorage timestamp is checked,
+    if expired → redirect home immediately.
+  - Clipboard denied: fall back to manual text entry, show error on paste button.
+  - Non-numeric pasted value: cleaned to digits, validated, error if not 6 digits.
+  - Empty customer_id: blocked by validation before any action.
