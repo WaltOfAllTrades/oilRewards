@@ -166,6 +166,8 @@ body {
 
 /* ── Form elements ──────────────────────────────────────── */
 input[type="text"],
+input[type="email"],
+input[type="password"],
 input[type="number"],
 textarea {
   width: 100%;
